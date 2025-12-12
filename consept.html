@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Philosophy | KOTONOVA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- リセット & 基本設定 --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #0a0a0a; /* 深い黒背景 */
+            color: #fff;
+            line-height: 1.8;
+            letter-spacing: 0.05em;
+            overflow-x: hidden;
+        }
+        a { text-decoration: none; color: inherit; }
+
+        /* --- ヘッダー（シンプル版） --- */
+        header {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+        .header-logo { font-weight: 700; font-size: 18px; letter-spacing: 1px; }
+        .back-btn { font-size: 12px; color: #aaa; }
+        .back-btn i { margin-right: 5px; }
+
+        /* --- コンテンツエリア --- */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 120px 25px 80px; /* ヘッダー分の余白 */
+            opacity: 0; /* 最初は隠す（フェードイン用） */
+            animation: fadeIn 1.5s ease-out forwards; /* 1.5秒かけて表示 */
+        }
+
+        /* --- タイポグラフィ設定 --- */
+        .main-copy {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 60px;
+            letter-spacing: 0.1em;
+            /* 文字に少し光沢感を出す */
+            background: linear-gradient(45deg, #ffffff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #888;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        /* タイトルの横の線 */
+        .section-title::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background-color: #333;
+            margin-left: 15px;
+        }
+
+        p.body-text {
+            font-size: 15px;
+            font-weight: 300; /* 細めのウェイト */
+            margin-bottom: 50px;
+            color: #ddd;
+        }
+        
+        .highlight {
+            font-weight: 500;
+            color: #fff;
+            border-bottom: 1px solid rgba(255,255,255,0.3);
+            padding-bottom: 2px;
+        }
+
+        /* --- フッター（サイン） --- */
+        .footer-sign {
+            text-align: right;
+            margin-top: 80px;
+            font-size: 14px;
+            color: #888;
+        }
+
+        /* --- フェードインアニメーション --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-logo">KOTONOVA</div>
+        <a href="index.html" class="back-btn">
+            <i class="fa-solid fa-arrow-left-long"></i> BACK
+        </a>
+    </header>
+
+    <div class="container">
+        <h1 class="main-copy">
+            WEAR<br>THE WORDS.
+        </h1>
+
+        <div class="section-title">PHILOSOPHY</div>
+        <p class="body-text">
+            言葉は、最も身近な魔法だ。<br>
+            それは時に盾となり、時に剣となり、<br>
+            何よりも強く、あなたの背中を押す。<br><br>
+            KOTONOVAは、単なる衣服ではない。<br>
+            <span class="highlight">あなたの意志を纏うための、戦闘服である。</span>
+        </p>
+
+        <div class="section-title">OUR BELIEF</div>
+        <p class="body-text">
+            夜空の月が美しいのは、闇があるから。<br>
+            あなたが輝くのも、迷いや影を知っているから。<br><br>
+            私たちは、綺麗事だけではない、<br>
+            人間の弱さや影すらも肯定する言葉を選ぶ。<br>
+            それが、本物の強さだと信じているから。
+        </p>
+
+        <div class="section-title">COMMITMENT</div>
+        <p class="body-text">
+          
+            長く愛される一枚であることに、<br>
+            私たちは妥協しない。
+        </p>
+
+        <div class="footer-sign">
+            KOTONOVA
+        </div>
+    </div>
+
+</body>
+</html>

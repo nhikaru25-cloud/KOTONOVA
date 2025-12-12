@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Contact | KOTONOVA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- リセット & 基本設定 --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #0a0a0a; /* 深い黒背景 */
+            color: #fff;
+            line-height: 1.8;
+            letter-spacing: 0.05em;
+            overflow-x: hidden;
+            /* 画面中央寄せのための設定 */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        a { text-decoration: none; color: inherit; }
+
+        /* --- ヘッダー --- */
+        header {
+            position: absolute;
+            top: 0; left: 0; width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+        .header-logo { font-weight: 700; font-size: 18px; letter-spacing: 1px; }
+        .back-btn { font-size: 12px; color: #aaa; }
+        .back-btn i { margin-right: 5px; }
+
+        /* --- コンテンツエリア（中央寄せ） --- */
+        .container {
+            flex-grow: 1; /* ヘッダー以外の領域を埋める */
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* 上下中央 */
+            align-items: center; /* 左右中央 */
+            padding: 20px;
+            text-align: center;
+            opacity: 0;
+            animation: fadeIn 1.5s ease-out forwards;
+        }
+
+        /* --- タイポグラフィ --- */
+        .page-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #888;
+            margin-bottom: 30px;
+            letter-spacing: 0.1em;
+        }
+
+        /* メールリンクのスタイル */
+        .email-link {
+            font-size: 24px; /* 少し大きく */
+            font-weight: 300;
+            color: #fff;
+            border-bottom: 1px solid rgba(255,255,255,0.3); /* 下線 */
+            padding-bottom: 5px;
+            transition: all 0.3s ease;
+        }
+        /* タップした時の動き */
+        .email-link:active {
+            color: #aaa;
+            border-bottom-color: rgba(255,255,255,0.1);
+        }
+
+        .message {
+            font-size: 13px;
+            color: #aaa;
+            margin-top: 30px;
+            font-weight: 300;
+        }
+
+        /* --- フェードインアニメーション --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-logo">KOTONOVA</div>
+        <a href="index.html" class="back-btn">
+            <i class="fa-solid fa-arrow-left-long"></i> BACK
+        </a>
+    </header>
+
+    <div class="container">
+        <div class="page-title">CONTACT</div>
+        
+        <a href="mailto:nhikaru25@icloud.com" class="email-link">
+            nhikaru25@icloud.com
+        </a>
+
+        <p class="message">
+            お問い合わせは上記メールアドレスまでお願いいたします。<br>
+            
+        </p>
+    </div>
+
+</body>
+</html>
