@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Make Suggest (Prototype)</title>
+  <style>
+    body{font-family:system-ui,-apple-system,"Noto Sans JP"; margin:0; padding:16px;}
+    .wrap{max-width:960px; margin:0 auto; display:grid; gap:12px;}
+    video, canvas{width:100%; border-radius:16px; border:1px solid #e5e5e5;}
+    .card{border:1px solid #e5e5e5; border-radius:16px; padding:12px;}
+    .btn{padding:10px 14px; border-radius:999px; border:1px solid #e5e5e5; background:#111; color:#fff; font-weight:700; cursor:pointer;}
+    small{color:#666}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h2>顔スキャン → メイク提案（簡易）</h2>
+  <button class="btn" id="start">カメラ開始</button>
+  <video id="video" playsinline muted></video>
+  <canvas id="overlay"></canvas>
+
+  <div class="card">
+    <b>提案</b>
+    <p id="suggest">未開始</p>
+    <small>※ 精密診断ではなく、顔特徴に基づく“提案候補”です。</small>
+  </div>
+</div>
+
+<script type="module">
+  import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("overlay");
+  const ctx = canvas.getContext("2d");
+  const suggestEl = document.getElementById("suggest");
+  const startBtn = document.getElementById("start");
+
+  let faceLandmarker;
+
+  function pickSuggestion(landmarks){
+    // 超雑な例：目の左右距離/顔幅で「寄り目/離れ目っぽい」を雰囲気判定
+    // ※ landmark index はFaceMeshに依存。ここは“動く骨組み”としての例。
+    const leftEye = landmarks[33];   // 目の端付近
+    const rightEye = landmarks[263];
+    const leftCheek = landmarks[234];
+    const rightCheek = landmarks[454];
+
+    const eyeDist = Math.abs(rightEye.x - leftEye.x);
+    const faceWidth = Math.abs(rightCheek.x - leftCheek.x);
+    const ratio = eyeDist / faceWidth;
+
+    if (ratio < 0.38){
+      return "【提案】目元を横に広げる：アイラインは“長め”＋チークは外側斜め。リップは輪郭をやや強調。";
+    } else if (ratio > 0.48){
+      return "【提案】目元を中央に寄せる：目頭側のシャドウを少し濃く。チークは中央寄せ。リップはシアーで軽く。";
+    }
+    return "【提案】バランス型：抜け感ブラウン＋薄膜チーク。リップはツヤ寄りで血色を足す。";
+  }
+
+  function drawPoints(landmarks){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = "rgba(255, 212, 0, .9)";
+    for (const p of landmarks){
+      ctx.beginPath();
+      ctx.arc(p.x*canvas.width, p.y*canvas.height, 1.2, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  async function init(){
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
+    video.srcObject = stream;
+    await video.play();
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const filesetResolver = await vision.FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+    );
+
+    faceLandmarker = await vision.FaceLandmarker.createFromOptions(filesetResolver, {
+      baseOptions: {
+        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
+      },
+      runningMode: "VIDEO",
+      numFaces: 1
+    });
+
+    loop();
+  }
+
+  let last = 0;
+  async function loop(){
+    const now = performance.now();
+    if (now - last > 80 && faceLandmarker){
+      last = now;
+      const res = faceLandmarker.detectForVideo(video, now);
+      if (res.faceLandmarks && res.faceLandmarks.length){
+        const lm = res.faceLandmarks[0];
+        drawPoints(lm);
+        suggestEl.textContent = pickSuggestion(lm);
+      } else {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        suggestEl.textContent = "顔が見つかりません。明るい場所で正面を向いてください。";
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  startBtn.addEventListener("click", () => init().catch(err=>{
+    suggestEl.textContent = "カメラ起動に失敗しました: " + err.message;
+  }));
+</script>
+</body>
+</html><!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Make Suggest (Prototype)</title>
+  <style>
+    body{font-family:system-ui,-apple-system,"Noto Sans JP"; margin:0; padding:16px;}
+    .wrap{max-width:960px; margin:0 auto; display:grid; gap:12px;}
+    video, canvas{width:100%; border-radius:16px; border:1px solid #e5e5e5;}
+    .card{border:1px solid #e5e5e5; border-radius:16px; padding:12px;}
+    .btn{padding:10px 14px; border-radius:999px; border:1px solid #e5e5e5; background:#111; color:#fff; font-weight:700; cursor:pointer;}
+    small{color:#666}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h2>顔スキャン → メイク提案（簡易）</h2>
+  <button class="btn" id="start">カメラ開始</button>
+  <video id="video" playsinline muted></video>
+  <canvas id="overlay"></canvas>
+
+  <div class="card">
+    <b>提案</b>
+    <p id="suggest">未開始</p>
+    <small>※ 精密診断ではなく、顔特徴に基づく“提案候補”です。</small>
+  </div>
+</div>
+
+<script type="module">
+  import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("overlay");
+  const ctx = canvas.getContext("2d");
+  const suggestEl = document.getElementById("suggest");
+  const startBtn = document.getElementById("start");
+
+  let faceLandmarker;
+
+  function pickSuggestion(landmarks){
+    // 超雑な例：目の左右距離/顔幅で「寄り目/離れ目っぽい」を雰囲気判定
+    // ※ landmark index はFaceMeshに依存。ここは“動く骨組み”としての例。
+    const leftEye = landmarks[33];   // 目の端付近
+    const rightEye = landmarks[263];
+    const leftCheek = landmarks[234];
+    const rightCheek = landmarks[454];
+
+    const eyeDist = Math.abs(rightEye.x - leftEye.x);
+    const faceWidth = Math.abs(rightCheek.x - leftCheek.x);
+    const ratio = eyeDist / faceWidth;
+
+    if (ratio < 0.38){
+      return "【提案】目元を横に広げる：アイラインは“長め”＋チークは外側斜め。リップは輪郭をやや強調。";
+    } else if (ratio > 0.48){
+      return "【提案】目元を中央に寄せる：目頭側のシャドウを少し濃く。チークは中央寄せ。リップはシアーで軽く。";
+    }
+    return "【提案】バランス型：抜け感ブラウン＋薄膜チーク。リップはツヤ寄りで血色を足す。";
+  }
+
+  function drawPoints(landmarks){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle = "rgba(255, 212, 0, .9)";
+    for (const p of landmarks){
+      ctx.beginPath();
+      ctx.arc(p.x*canvas.width, p.y*canvas.height, 1.2, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  async function init(){
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
+    video.srcObject = stream;
+    await video.play();
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    const filesetResolver = await vision.FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+    );
+
+    faceLandmarker = await vision.FaceLandmarker.createFromOptions(filesetResolver, {
+      baseOptions: {
+        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
+      },
+      runningMode: "VIDEO",
+      numFaces: 1
+    });
+
+    loop();
+  }
+
+  let last = 0;
+  async function loop(){
+    const now = performance.now();
+    if (now - last > 80 && faceLandmarker){
+      last = now;
+      const res = faceLandmarker.detectForVideo(video, now);
+      if (res.faceLandmarks && res.faceLandmarks.length){
+        const lm = res.faceLandmarks[0];
+        drawPoints(lm);
+        suggestEl.textContent = pickSuggestion(lm);
+      } else {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        suggestEl.textContent = "顔が見つかりません。明るい場所で正面を向いてください。";
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+
+  startBtn.addEventListener("click", () => init().catch(err=>{
+    suggestEl.textContent = "カメラ起動に失敗しました: " + err.message;
+  }));
+</script>
+</body>
+</html>
