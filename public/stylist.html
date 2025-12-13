@@ -1,22 +1,365 @@
-<!doctype html>
-<html>
-<body>
-<button id="start">Start Camera</button>
-<video id="v" autoplay playsinline muted></video>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KOTONOVA | 診断カメラ</title>
+    <style>
+        :root {
+            --primary-pink: #FF8FA3;
+            --bg-white: #FAFAFA;
+            --text-dark: #333333;
+        }
 
-<script>
-document.getElementById("start").onclick = async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    const v = document.getElementById("v");
-    v.srcObject = stream;
-    await v.play();
-    alert("Camera started");
-  } catch (e) {
-    alert(e.name + ": " + e.message);
-    console.error(e);
-  }
-};
-</script>
+        body {
+            margin: 0;
+            background-color: var(--bg-white);
+            color: var(--text-dark);
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ヘッダー */
+        header {
+            width: 100%;
+            background: white;
+            padding: 15px 0;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .brand-logo { font-size: 18px; font-weight: bold; }
+        .brand-sub { font-size: 10px; color: var(--primary-pink); }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* エラー表示エリア（真っ暗な原因を表示） */
+        #errorLog {
+            width: 100%;
+            background: #ffebee;
+            color: #c62828;
+            font-size: 12px;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: none; /* エラー時のみ表示 */
+            border: 1px solid #ef9a9a;
+        }
+
+        /* カメラエリア */
+        .camera-frame {
+            position: relative;
+            width: 300px;
+            height: 400px;
+            background: #000; /* ここが黒い背景 */
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        /* 手動起動ボタン（自動で動かない時用） */
+        #startCameraBtn {
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            border: none;
+            font-weight: bold;
+            display: none; /* 初期は非表示 */
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        /* ガイド・演出 */
+        .guide-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .face-oval {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 220px;
+            border: 2px dashed rgba(255, 255, 255, 0.8);
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+        }
+
+        /* 解析ボタン */
+        .btn-capture {
+            background: var(--primary-pink);
+            color: white;
+            border: none;
+            padding: 16px 40px;
+            font-size: 14px;
+            border-radius: 50px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 143, 163, 0.4);
+            cursor: pointer;
+        }
+
+        /* 結果エリア（最初は非表示） */
+        #reportCard {
+            display: none;
+            width: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+        }
+        .result-title { font-weight: bold; color: var(--primary-pink); margin-bottom: 10px; }
+        .result-text { font-size: 13px; color: #666; line-height: 1.6; }
+        
+        .color-chip {
+            display: inline-block;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            margin-right: 5px;
+            border: 1px solid #ddd;
+        }
+
+        /* おすすめアイテム */
+        .item-box {
+            display: flex;
+            gap: 10px;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 15px;
+            align-items: center;
+        }
+        .item-img {
+            width: 50px; height: 50px;
+            background: #eee;
+            border-radius: 5px;
+            object-fit: cover;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-logo">KOTONOVA</div>
+        <div class="brand-sub">PROFESSIONAL ANALYSIS</div>
+    </header>
+
+    <div class="container">
+        
+        <div id="errorLog"></div>
+
+        <button id="startCameraBtn" onclick="initCamera()">📸 カメラを起動する</button>
+
+        <div class="camera-frame">
+            <video id="video" autoplay playsinline muted></video>
+            
+            <div class="guide-overlay">
+                <div class="face-oval"></div>
+                <div style="position:absolute; bottom:20px; width:100%; text-align:center; color:white; font-size:12px;">枠に顔を合わせてください</div>
+            </div>
+            
+            <canvas id="canvas" style="display:none;"></canvas>
+        </div>
+
+        <button class="btn-capture" id="scanBtn">解析スタート</button>
+
+        <div id="reportCard">
+            <div class="result-title">診断結果: <span id="resTitle">---</span></div>
+            
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:12px; font-weight:bold;">
+                <div>肌タイプ: <span id="resBase">---</span></div>
+                <div>トーン: <span id="resSeason">---</span></div>
+            </div>
+
+            <div class="result-title" style="font-size:12px;">おすすめカラー</div>
+            <div id="paletteBox" style="margin-bottom:15px;"></div>
+
+            <div class="result-title" style="font-size:12px;">アドバイス</div>
+            <div class="result-text" id="resAdvice">ここにアドバイスが表示されます。</div>
+
+            <div class="item-box" id="itemBox">
+                </div>
+            
+            <button onclick="location.reload()" style="width:100%; margin-top:20px; padding:10px; background:#eee; border:none; border-radius:5px;">再診断</button>
+        </div>
+
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const errorLog = document.getElementById('errorLog');
+        const startBtn = document.getElementById('startCameraBtn');
+
+        // エラーを表示する関数
+        function showError(msg) {
+            errorLog.style.display = 'block';
+            errorLog.innerHTML = `⚠️ <strong>カメラエラー:</strong><br>${msg}`;
+            // エラーが出たら手動ボタンを出す
+            startBtn.style.display = 'block';
+        }
+
+        // カメラ起動関数
+        async function initCamera() {
+            startBtn.style.display = 'none'; // ボタン隠す
+            errorLog.style.display = 'none'; // エラー隠す
+
+            // httpsチェック
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.protocol !== 'file:') {
+                 // httpだと動かないことが多いので警告
+                 showError("セキュリティ制限により、カメラは https サイトでないと動作しません。");
+                 return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: "user", // フロントカメラ
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    },
+                    audio: false
+                });
+                
+                video.srcObject = stream;
+                
+                // 明示的に再生（iPhone対策）
+                await video.play();
+
+            } catch (err) {
+                console.error(err);
+                
+                let msg = "不明なエラーが発生しました。";
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    msg = "カメラのアクセスが許可されていません。<br>ブラウザの設定でカメラを許可して、リロードしてください。";
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    msg = "カメラが見つかりません。";
+                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                    msg = "カメラが他のアプリで使用されています。";
+                } else {
+                    msg = err.name + ": " + err.message;
+                }
+                showError(msg);
+            }
+        }
+
+        // ページ読み込み時に起動を試みる
+        window.addEventListener('load', initCamera);
+
+
+        // --- 解析ボタンの処理 ---
+        document.getElementById('scanBtn').addEventListener('click', () => {
+            if (video.readyState !== video.HAVE_ENOUGH_DATA) {
+                alert("カメラの映像が準備できていません。少々お待ちください。");
+                return;
+            }
+
+            // キャンバスに描画
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.save();
+            ctx.scale(-1, 1); // 鏡反転
+            ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+            ctx.restore();
+
+            // 解析ロジック（中央付近の色を取得）
+            const x = Math.floor(canvas.width * 0.35); // 鏡反転してるので0.35あたりが右頬
+            const y = Math.floor(canvas.height * 0.55);
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            
+            analyze(pixel[0], pixel[1], pixel[2]);
+
+            // 結果表示
+            document.getElementById('scanBtn').style.display = 'none';
+            document.getElementById('reportCard').style.display = 'block';
+            document.getElementById('reportCard').scrollIntoView({behavior: "smooth"});
+        });
+
+
+        // --- 簡易解析ロジック ---
+        function analyze(r, g, b) {
+            // 肌の明るさ
+            const brightness = (r + g + b) / 3;
+            // イエベブルベ（RとBの差）
+            const isWarm = (r - b) > 30; 
+
+            let title, base, season, advice, colors, itemHTML;
+
+            if (isWarm) {
+                base = "イエローベース";
+                if (brightness > 130) {
+                    season = "春 (SPRING)";
+                    title = "春の陽気のような透明感タイプ";
+                    advice = "明るく黄みのある肌色です。コーラルピンクやオレンジなど、ビタミンカラーが似合います。KOTONOVAの白フーディーで透明感を引き立てるのがおすすめ。";
+                    colors = ["#FF8FA3", "#FFD700", "#FF7F50"];
+                    itemHTML = `<div class="item-img" style="background:white; border:1px solid #ddd;"></div><div><div style="font-size:12px; font-weight:bold;">Soon, I will bloom フーディー</div><div style="font-size:10px;">あなたの明るい肌にはホワイトが映えます。</div></div>`;
+                } else {
+                    season = "秋 (AUTUMN)";
+                    title = "シックで大人っぽいゴージャスタイプ";
+                    advice = "落ち着いた深みのある肌色です。テラコッタやカーキなど、アースカラーが魅力を引き出します。黒のアイテムで引き締めるとさらにクールです。";
+                    colors = ["#8B4513", "#DAA520", "#556B2F"];
+                    itemHTML = `<div class="item-img" style="background:black;"></div><div><div style="font-size:12px; font-weight:bold;">ロゴトラックパンツ</div><div style="font-size:10px;">シックなあなたにはブラックコーデが最適。</div></div>`;
+                }
+            } else {
+                base = "ブルーベース";
+                if (brightness > 130) {
+                    season = "夏 (SUMMER)";
+                    title = "涼しげで儚いエレガントタイプ";
+                    advice = "ピンク味のある明るい肌色です。ラベンダーやパステルブルーなど、涼しげな色が透明感を爆上げします。";
+                    colors = ["#D8BFD8", "#B0C4DE", "#DB7093"];
+                    itemHTML = `<div class="item-img" style="background:white; border:1px solid #ddd;"></div><div><div style="font-size:12px; font-weight:bold;">Soon, I will bloom フーディー</div><div style="font-size:10px;">儚げなデザインがあなたの雰囲気とマッチします。</div></div>`;
+                } else {
+                    season = "冬 (WINTER)";
+                    title = "コントラストの効いたクールタイプ";
+                    advice = "シャープな印象の肌色です。黒、白、赤など、はっきりした色が負けません。モノトーンコーデが最強に似合うタイプです。";
+                    colors = ["#000000", "#DC143C", "#FFFFFF"];
+                    itemHTML = `<div class="item-img" style="background:black;"></div><div><div style="font-size:12px; font-weight:bold;">ロゴトラックパンツ</div><div style="font-size:10px;">コントラストの強い配色があなたを主役にします。</div></div>`;
+                }
+            }
+
+            document.getElementById('resTitle').innerText = title;
+            document.getElementById('resBase').innerText = base;
+            document.getElementById('resSeason').innerText = season;
+            document.getElementById('resAdvice').innerText = advice;
+            document.getElementById('itemBox').innerHTML = itemHTML;
+
+            const pBox = document.getElementById('paletteBox');
+            pBox.innerHTML = "";
+            colors.forEach(c => {
+                let d = document.createElement('div');
+                d.className = 'color-chip';
+                d.style.backgroundColor = c;
+                pBox.appendChild(d);
+            });
+        }
+    </script>
 </body>
 </html>
