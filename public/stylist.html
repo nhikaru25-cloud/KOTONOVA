@@ -122,6 +122,7 @@
             box-shadow: 0 5px 20px rgba(0,0,0,0.05);
             overflow: hidden;
             animation: slideUp 0.5s ease;
+            padding-bottom: 40px; /* 下部余白確保 */
         }
 
         @keyframes slideUp {
@@ -179,44 +180,50 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        /* 商品リンクカード */
-        .item-card {
-            border: 1px solid #eee;
+        /* ショップ誘導エリア */
+        .shop-cta-box {
+            background: #fdf2f5;
+            border: 1px solid #ffd1dc;
             border-radius: 12px;
-            padding: 15px;
-            background: #f9f9f9;
-            margin-top: 15px;
-            text-decoration: none;
-            color: inherit;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: background 0.2s;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 10px;
+            /* 重なり防止 */
+            position: relative;
+            z-index: 50;
         }
-        .item-card:active { background: #f0f0f0; }
+        .shop-advice-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--deep-pink);
+            margin-bottom: 10px;
+        }
+        .shop-advice-text {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
         
-        .item-thumb {
-            width: 70px; height: 70px;
-            background: #fff;
-            border-radius: 8px;
-            border: 1px solid #eee;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-        .item-info { flex: 1; }
-        .item-name { font-size: 14px; font-weight: bold; margin-bottom: 5px; }
-        .item-reason { font-size: 11px; color: var(--text-sub); line-height: 1.4; }
-        .btn-buy {
-            background: var(--text-main);
+        /* 確実なボタン */
+        .btn-shop {
+            display: block;
+            width: 100%;
+            background: black;
             color: white;
-            font-size: 10px;
-            padding: 5px 10px;
-            border-radius: 4px;
-            margin-top: 5px;
-            display: inline-block;
+            border: none;
+            padding: 15px 0;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 14px;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            /* 最前面に配置 */
+            position: relative;
+            z-index: 100;
         }
+        .btn-shop:active { opacity: 0.8; transform: translateY(2px); }
 
     </style>
 </head>
@@ -274,26 +281,16 @@
 
                 <div class="advice-box" style="margin-bottom:0;">
                     <div class="advice-head">👗 KOTONOVA スタイリング提案</div>
-                    <p style="font-size:11px; margin-bottom:10px;">あなたの診断タイプに最もシンクロするアイテム：</p>
                     
-                    <a href="https://suzuri.jp/KOTONOVA/19092048/hoodie/s/white" target="_blank" class="item-card">
-                        <div class="item-thumb">🧥</div>
-                        <div class="item-info">
-                            <div class="item-name">Soon, I will bloom フーディー (A)</div>
-                            <div class="item-reason" id="reasonItem1"></div>
-                            <span class="btn-buy">詳細を見る ▶</span>
-                        </div>
-                    </a>
-
-                    <a href="https://suzuri.jp/KOTONOVA/19073429/hoodie/s/white" target="_blank" class="item-card">
-                        <div class="item-thumb">✨</div>
-                        <div class="item-info">
-                            <div class="item-name">Soon, I will bloom フーディー (B)</div>
-                            <div class="item-reason" id="reasonItem2"></div>
-                            <span class="btn-buy">詳細を見る ▶</span>
-                        </div>
-                    </a>
-
+                    <div class="shop-cta-box">
+                        <div class="shop-advice-title">あなたが見るべきアイテムは？</div>
+                        <div class="shop-advice-text" id="shopAdviceText">
+                            </div>
+                        
+                        <button id="goShopBtn" class="btn-shop">
+                            似合うアイテムを探しに行く ▶
+                        </button>
+                    </div>
                 </div>
 
                 <button onclick="location.reload()" style="width:100%; margin-top:30px; padding:15px; background:#f0f0f0; border:none; border-radius:50px; font-weight:bold; color:#666;">もう一度診断する</button>
@@ -303,11 +300,19 @@
     </div>
 
     <script>
-        // --- 初期設定 ---
+        // --- 設定 ---
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const errorLog = document.getElementById('errorLog');
+
+        // ★ショップへのリンク処理（ここを確実に動くように修正）
+        document.getElementById('goShopBtn').onclick = function() {
+            // 新しいタブで開く
+            window.open('https://kotonova.net', '_blank');
+            // ポップアップブロック対策で、もし開かなければ同じタブで開く
+            // window.location.href = 'https://kotonova.net'; 
+        };
 
         // カメラ起動
         async function initCamera() {
@@ -321,7 +326,6 @@
                     audio: false
                 });
                 video.srcObject = stream;
-                // iPhoneでの自動再生対策
                 video.setAttribute("playsinline", true); 
                 await video.play();
             } catch (err) {
@@ -336,22 +340,19 @@
 
         // --- 診断実行 ---
         document.getElementById('scanBtn').addEventListener('click', () => {
-            if(video.readyState !== 4) return; // 準備できてなければ無視
+            if(video.readyState !== 4) return;
 
-            // 画像取得
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             ctx.scale(-1, 1);
             ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
             
-            // 色解析（中央付近）
-            const x = Math.floor(canvas.width * 0.35); // 反転考慮
+            const x = Math.floor(canvas.width * 0.35); 
             const y = Math.floor(canvas.height * 0.55);
             const p = ctx.getImageData(x, y, 1, 1).data;
             
             analyze(p[0], p[1], p[2]);
 
-            // 画面切り替え
             document.getElementById('scanScreen').style.display = 'none';
             document.getElementById('reportCard').style.display = 'block';
             window.scrollTo({top: 0, behavior: 'smooth'});
@@ -360,11 +361,10 @@
         // --- 詳細診断ロジック ---
         function analyze(r, g, b) {
             const brightness = (r + g + b) / 3;
-            const warmScore = (r - b); // 赤と青の差
+            const warmScore = (r - b); 
 
             let result = {};
             
-            // 4シーズン判定
             if (warmScore > 20) {
                 // イエベ
                 if (brightness > 120) {
@@ -375,8 +375,7 @@
                         total: "春の木漏れ日のような、多幸感あふれる「透明感」が武器のタイプです。暗い色で塗りつぶすよりも、本来の明るい肌質を活かしたツヤ肌メイクが、あなたの親しみやすさとオーラを最大化します。",
                         make: "【肌】厚塗りはNG。ピーチ系の下地で血色を足し、素肌感を残して。<br>【目】コーラルオレンジやゴールドブラウン。大粒ラメより繊細なシマー質感が瞳を輝かせます。<br>【唇】マットより、ちゅるんとした質感のティントリップが正解。",
                         colors: ["#FF8FA3", "#FFD700", "#FF7F50", "#98FB98"],
-                        reason1: "あなたの明るい肌色には、このピュアホワイトが「レフ板」の効果を果たし、顔色をワントーン明るく見せます。",
-                        reason2: "花柄のアートワークが、スプリングタイプ特有の可愛らしさとエネルギーに完璧にマッチします。"
+                        shopAdvice: "あなたの明るい肌色には、**「ホワイト」や「鮮やかな色」**のアイテムがレフ板効果を発揮し、顔色をさらに明るく見せます。<br>サイトでは**『Soon, I will bloom』シリーズのような、明るいアートワーク**のアイテムをチェックしてください。"
                     };
                 } else {
                     // 秋
@@ -386,8 +385,7 @@
                         total: "リッチで都会的、ゴージャスな雰囲気を持つ「ハンサム美人」タイプです。深みのあるアースカラーを身につけると、一気に洗練された大人の余裕が生まれます。",
                         make: "【肌】陶器のようなセミマット肌が最強。ハイライトで立体感を。<br>【目】テラコッタ、カーキ、マスタード。陰影（シェーディング）を重視したスモーキーメイクが似合います。<br>【唇】ブリックレッド（レンガ色）やブラウン系で引き締めて。",
                         colors: ["#8B4513", "#DAA520", "#556B2F", "#CD5C5C"],
-                        reason1: "シックなメイクが得意なあなただからこそ、あえて白のフーディーで「抜け感」を作ると、洗練されたK-POP空港ファッションになります。",
-                        reason2: "深みのあるメイクと対照的な白いキャンバスが、あなたの顔立ちの立体感をより際立たせます。"
+                        shopAdvice: "シックなメイクが得意なあなたには、**「ブラック」や「ディープカラー」**のアイテムが洗練されたオーラを作ります。<br>サイトでは**『ロゴトラックパンツ』のような、クールで引き締まったデザイン**を重点的にチェックしてください。"
                     };
                 }
             } else {
@@ -400,8 +398,7 @@
                         total: "雨上がりの紫陽花のような、儚げで上品な「エレガント」タイプです。強い色よりも、くすみのあるパステルカラー（ミューテッドカラー）が、あなたの透明感を爆発させます。",
                         make: "【肌】ピンクオークル系で黄ぐすみをカバー。パウダリーで柔らかな肌質に。<br>【目】ローズピンク、ラベンダー、ココアブラウン。アイラインはグレー系で優しく締めて。<br>【唇】青みピンクやローズ系が肌の白さを引き立てます。",
                         colors: ["#D8BFD8", "#B0C4DE", "#DB7093", "#E6E6FA"],
-                        reason1: "サマータイプの持つ「儚さ」と、このフーディーの繊細なアートワークは運命的な相性です。透明感がさらに増します。",
-                        reason2: "コントラストを抑えた配色が得意なあなたには、この優しい色合いのデザインが肌に溶け込むように馴染みます。"
+                        shopAdvice: "儚げな透明感を持つあなたには、**「淡い色」や「繊細なグラフィック」**が運命的にマッチします。<br>サイトでは**KOTONOVAの『アートワーク系フーディー』**など、優しい色合いのコレクションを探してみてください。"
                     };
                 } else {
                     // 冬
@@ -411,19 +408,17 @@
                         total: "雪景色に咲く椿のような、シャープでモダンな「クールビューティー」タイプです。ぼんやりした色よりも、白・黒・赤といったコントラストの強い色が、あなたの強い瞳の力を引き出します。",
                         make: "【肌】白さを際立たせるハイカバー。シェーディングよりハイライトで光を集めて。<br>【目】アイシーブルーやフューシャピンク。アイラインは黒ではっきり跳ね上げて。<br>【唇】真紅やワインレッドなど、主役級の濃い色が負けません。",
                         colors: ["#000000", "#DC143C", "#4169E1", "#FFFFFF"],
-                        reason1: "ウィンタータイプは「真っ白」が最も似合うタイプです。このフーディーのクリアな白は、あなたの肌の白さを極限まで引き立てます。",
-                        reason2: "コントラストが得意なあなた。濃いリップメイクをしてこのフーディーを着るだけで、K-POPアイドルのような強いオーラが完成します。"
+                        shopAdvice: "コントラストが得意なあなたには、**「モノトーン」や「はっきりしたロゴ」**のデザインが最強に似合います。<br>サイトでは**『白×黒』のライン使いが特徴的なアイテムや、エッジの効いたデザイン**をチェックしてください。"
                     };
                 }
             }
 
-            // HTMLへの反映
             document.getElementById('resSeason').innerText = result.season;
             document.getElementById('resBase').innerText = result.base;
             document.getElementById('resTotal').innerText = result.total;
             document.getElementById('resMake').innerHTML = result.make;
+            document.getElementById('shopAdviceText').innerHTML = result.shopAdvice;
             
-            // 色チップ生成
             const pBox = document.getElementById('paletteBox');
             pBox.innerHTML = "";
             result.colors.forEach(c => {
@@ -432,10 +427,6 @@
                 d.style.backgroundColor = c;
                 pBox.appendChild(d);
             });
-
-            // 商品理由の反映
-            document.getElementById('reasonItem1').innerText = result.reason1;
-            document.getElementById('reasonItem2').innerText = result.reason2;
         }
     </script>
 </body>
