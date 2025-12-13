@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>KOTONOVA | 診断カメラ</title>
+    <title>KOTONOVA | パーソナルビジュアル診断</title>
     <style>
         :root {
             --primary-pink: #FF8FA3;
-            --bg-white: #FAFAFA;
-            --text-dark: #333333;
+            --deep-pink: #E91E63;
+            --bg-color: #FAFAFA;
+            --text-main: #333;
+            --text-sub: #666;
         }
 
         body {
             margin: 0;
-            background-color: var(--bg-white);
-            color: var(--text-dark);
-            font-family: sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: "Helvetica Neue", Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -31,9 +33,10 @@
             position: sticky;
             top: 0;
             z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-        .brand-logo { font-size: 18px; font-weight: bold; }
-        .brand-sub { font-size: 10px; color: var(--primary-pink); }
+        .brand-logo { font-size: 20px; font-weight: 800; letter-spacing: 1px; }
+        .brand-sub { font-size: 10px; color: var(--primary-pink); font-weight: bold; margin-top: 3px; }
 
         .container {
             width: 100%;
@@ -45,7 +48,7 @@
             align-items: center;
         }
 
-        /* エラー表示エリア（真っ暗な原因を表示） */
+        /* エラー表示 */
         #errorLog {
             width: 100%;
             background: #ffebee;
@@ -54,20 +57,21 @@
             padding: 10px;
             border-radius: 5px;
             margin-bottom: 10px;
-            display: none; /* エラー時のみ表示 */
+            display: none;
             border: 1px solid #ef9a9a;
         }
 
-        /* カメラエリア */
+        /* カメラフレーム */
         .camera-frame {
             position: relative;
-            width: 300px;
-            height: 400px;
-            background: #000; /* ここが黒い背景 */
+            width: 100%;
+            max-width: 350px;
+            aspect-ratio: 3/4;
+            background: #000;
             border-radius: 20px;
             overflow: hidden;
             margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
         }
 
         video {
@@ -77,89 +81,141 @@
             transform: scaleX(-1);
         }
 
-        /* 手動起動ボタン（自動で動かない時用） */
-        #startCameraBtn {
-            background: #333;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 30px;
-            border: none;
-            font-weight: bold;
-            display: none; /* 初期は非表示 */
-            margin-bottom: 20px;
-            cursor: pointer;
-        }
-
-        /* ガイド・演出 */
         .guide-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
         }
         .face-oval {
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 150px;
-            height: 220px;
-            border: 2px dashed rgba(255, 255, 255, 0.8);
+            width: 50%; height: 60%;
+            border: 2px dashed rgba(255, 255, 255, 0.9);
             border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
         /* 解析ボタン */
         .btn-capture {
-            background: var(--primary-pink);
+            background: linear-gradient(135deg, var(--primary-pink), var(--deep-pink));
             color: white;
             border: none;
-            padding: 16px 40px;
-            font-size: 14px;
+            padding: 18px 50px;
+            font-size: 15px;
             border-radius: 50px;
             font-weight: bold;
-            box-shadow: 0 4px 15px rgba(255, 143, 163, 0.4);
+            box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
             cursor: pointer;
+            letter-spacing: 1px;
+            transition: transform 0.1s;
         }
+        .btn-capture:active { transform: scale(0.95); }
 
-        /* 結果エリア（最初は非表示） */
+        /* 結果レポート */
         #reportCard {
             display: none;
             width: 100%;
             background: white;
-            padding: 20px;
             border-radius: 15px;
-            margin-top: 20px;
+            margin-top: 10px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-        }
-        .result-title { font-weight: bold; color: var(--primary-pink); margin-bottom: 10px; }
-        .result-text { font-size: 13px; color: #666; line-height: 1.6; }
-        
-        .color-chip {
-            display: inline-block;
-            width: 30px; height: 30px;
-            border-radius: 50%;
-            margin-right: 5px;
-            border: 1px solid #ddd;
+            overflow: hidden;
+            animation: slideUp 0.5s ease;
         }
 
-        /* おすすめアイテム */
-        .item-box {
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .report-header {
+            background: #333;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .report-title { font-size: 18px; font-weight: bold; }
+        .report-season { 
+            font-size: 24px; 
+            font-weight: 900; 
+            color: var(--primary-pink); 
+            margin-top: 10px; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .report-body { padding: 25px; }
+
+        /* アドバイスセクション */
+        .advice-box { margin-bottom: 30px; }
+        .advice-head {
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--deep-pink);
+            border-left: 4px solid var(--deep-pink);
+            padding-left: 10px;
+            margin-bottom: 10px;
             display: flex;
-            gap: 10px;
-            background: #f9f9f9;
-            padding: 10px;
-            border-radius: 10px;
-            margin-top: 15px;
             align-items: center;
         }
-        .item-img {
-            width: 50px; height: 50px;
-            background: #eee;
-            border-radius: 5px;
-            object-fit: cover;
+        .advice-text {
+            font-size: 13px;
+            line-height: 1.8;
+            color: var(--text-sub);
+            text-align: justify;
+        }
+
+        /* カラーパレット */
+        .palette-grid {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .color-chip {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* 商品リンクカード */
+        .item-card {
+            border: 1px solid #eee;
+            border-radius: 12px;
+            padding: 15px;
+            background: #f9f9f9;
+            margin-top: 15px;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: background 0.2s;
+        }
+        .item-card:active { background: #f0f0f0; }
+        
+        .item-thumb {
+            width: 70px; height: 70px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .item-info { flex: 1; }
+        .item-name { font-size: 14px; font-weight: bold; margin-bottom: 5px; }
+        .item-reason { font-size: 11px; color: var(--text-sub); line-height: 1.4; }
+        .btn-buy {
+            background: var(--text-main);
+            color: white;
+            font-size: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-top: 5px;
+            display: inline-block;
         }
 
     </style>
@@ -168,198 +224,220 @@
 
     <header>
         <div class="brand-logo">KOTONOVA</div>
-        <div class="brand-sub">PROFESSIONAL ANALYSIS</div>
+        <div class="brand-sub">VISUAL DIRECTOR DIAGNOSIS</div>
     </header>
 
     <div class="container">
         
         <div id="errorLog"></div>
 
-        <button id="startCameraBtn" onclick="initCamera()">📸 カメラを起動する</button>
-
-        <div class="camera-frame">
-            <video id="video" autoplay playsinline muted></video>
-            
-            <div class="guide-overlay">
-                <div class="face-oval"></div>
-                <div style="position:absolute; bottom:20px; width:100%; text-align:center; color:white; font-size:12px;">枠に顔を合わせてください</div>
+        <div id="scanScreen" style="width:100%; display:flex; flex-direction:column; align-items:center;">
+            <div class="camera-frame">
+                <video id="video" autoplay playsinline muted></video>
+                <div class="guide-overlay">
+                    <div class="face-oval"></div>
+                    <div style="position:absolute; bottom:20px; width:100%; text-align:center; color:white; font-size:12px; font-weight:bold; text-shadow:0 1px 3px black;">
+                        枠内に顔を合わせてください
+                    </div>
+                </div>
+                <canvas id="canvas" style="display:none;"></canvas>
             </div>
             
-            <canvas id="canvas" style="display:none;"></canvas>
+            <button class="btn-capture" id="scanBtn">診断スタート</button>
+            <p style="font-size:10px; color:#999; margin-top:15px;">※画像はサーバーに保存されません</p>
         </div>
 
-        <button class="btn-capture" id="scanBtn">解析スタート</button>
-
         <div id="reportCard">
-            <div class="result-title">診断結果: <span id="resTitle">---</span></div>
-            
-            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:12px; font-weight:bold;">
-                <div>肌タイプ: <span id="resBase">---</span></div>
-                <div>トーン: <span id="resSeason">---</span></div>
+            <div class="report-header">
+                <div class="report-title">YOUR TYPE</div>
+                <div class="report-season" id="resSeason">---</div>
+                <div style="font-size:11px; margin-top:5px; opacity:0.8;" id="resBase">---</div>
             </div>
 
-            <div class="result-title" style="font-size:12px;">おすすめカラー</div>
-            <div id="paletteBox" style="margin-bottom:15px;"></div>
-
-            <div class="result-title" style="font-size:12px;">アドバイス</div>
-            <div class="result-text" id="resAdvice">ここにアドバイスが表示されます。</div>
-
-            <div class="item-box" id="itemBox">
+            <div class="report-body">
+                
+                <div class="advice-box">
+                    <div class="advice-head">💎 ビジュアル・コンセプト</div>
+                    <div class="advice-text" id="resTotal"></div>
                 </div>
-            
-            <button onclick="location.reload()" style="width:100%; margin-top:20px; padding:10px; background:#eee; border:none; border-radius:5px;">再診断</button>
+
+                <div class="advice-box">
+                    <div class="advice-head">💄 メイクアップ・レシピ</div>
+                    <div class="advice-text" id="resMake"></div>
+                </div>
+
+                <div class="advice-box">
+                    <div class="advice-head">🎨 パーソナル・パレット</div>
+                    <div class="palette-grid" id="paletteBox"></div>
+                    <p style="font-size:10px; color:#999; margin-top:5px;">この色があなたの透明感を最大化します。</p>
+                </div>
+
+                <div class="advice-box" style="margin-bottom:0;">
+                    <div class="advice-head">👗 KOTONOVA スタイリング提案</div>
+                    <p style="font-size:11px; margin-bottom:10px;">あなたの診断タイプに最もシンクロするアイテム：</p>
+                    
+                    <a href="https://suzuri.jp/KOTONOVA/19092048/hoodie/s/white" target="_blank" class="item-card">
+                        <div class="item-thumb">🧥</div>
+                        <div class="item-info">
+                            <div class="item-name">Soon, I will bloom フーディー (A)</div>
+                            <div class="item-reason" id="reasonItem1"></div>
+                            <span class="btn-buy">詳細を見る ▶</span>
+                        </div>
+                    </a>
+
+                    <a href="https://suzuri.jp/KOTONOVA/19073429/hoodie/s/white" target="_blank" class="item-card">
+                        <div class="item-thumb">✨</div>
+                        <div class="item-info">
+                            <div class="item-name">Soon, I will bloom フーディー (B)</div>
+                            <div class="item-reason" id="reasonItem2"></div>
+                            <span class="btn-buy">詳細を見る ▶</span>
+                        </div>
+                    </a>
+
+                </div>
+
+                <button onclick="location.reload()" style="width:100%; margin-top:30px; padding:15px; background:#f0f0f0; border:none; border-radius:50px; font-weight:bold; color:#666;">もう一度診断する</button>
+            </div>
         </div>
 
     </div>
 
     <script>
+        // --- 初期設定 ---
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const errorLog = document.getElementById('errorLog');
-        const startBtn = document.getElementById('startCameraBtn');
 
-        // エラーを表示する関数
-        function showError(msg) {
-            errorLog.style.display = 'block';
-            errorLog.innerHTML = `⚠️ <strong>カメラエラー:</strong><br>${msg}`;
-            // エラーが出たら手動ボタンを出す
-            startBtn.style.display = 'block';
-        }
-
-        // カメラ起動関数
+        // カメラ起動
         async function initCamera() {
-            startBtn.style.display = 'none'; // ボタン隠す
-            errorLog.style.display = 'none'; // エラー隠す
-
-            // httpsチェック
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.protocol !== 'file:') {
-                 // httpだと動かないことが多いので警告
-                 showError("セキュリティ制限により、カメラは https サイトでないと動作しません。");
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                 showError("エラー: カメラを使用するには https 接続が必要です。");
                  return;
             }
-
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: "user", // フロントカメラ
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
-                    },
+                    video: { facingMode: "user", width: {ideal: 640}, height: {ideal: 480} },
                     audio: false
                 });
-                
                 video.srcObject = stream;
-                
-                // 明示的に再生（iPhone対策）
+                // iPhoneでの自動再生対策
+                video.setAttribute("playsinline", true); 
                 await video.play();
-
             } catch (err) {
-                console.error(err);
-                
-                let msg = "不明なエラーが発生しました。";
-                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                    msg = "カメラのアクセスが許可されていません。<br>ブラウザの設定でカメラを許可して、リロードしてください。";
-                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-                    msg = "カメラが見つかりません。";
-                } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-                    msg = "カメラが他のアプリで使用されています。";
-                } else {
-                    msg = err.name + ": " + err.message;
-                }
-                showError(msg);
+                showError("カメラへのアクセスが拒否されました。<br>ブラウザの設定で許可してください。");
             }
         }
-
-        // ページ読み込み時に起動を試みる
+        function showError(msg) {
+            errorLog.style.display = 'block';
+            errorLog.innerHTML = msg;
+        }
         window.addEventListener('load', initCamera);
 
-
-        // --- 解析ボタンの処理 ---
+        // --- 診断実行 ---
         document.getElementById('scanBtn').addEventListener('click', () => {
-            if (video.readyState !== video.HAVE_ENOUGH_DATA) {
-                alert("カメラの映像が準備できていません。少々お待ちください。");
-                return;
-            }
+            if(video.readyState !== 4) return; // 準備できてなければ無視
 
-            // キャンバスに描画
+            // 画像取得
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            ctx.save();
-            ctx.scale(-1, 1); // 鏡反転
+            ctx.scale(-1, 1);
             ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-            ctx.restore();
-
-            // 解析ロジック（中央付近の色を取得）
-            const x = Math.floor(canvas.width * 0.35); // 鏡反転してるので0.35あたりが右頬
-            const y = Math.floor(canvas.height * 0.55);
-            const pixel = ctx.getImageData(x, y, 1, 1).data;
             
-            analyze(pixel[0], pixel[1], pixel[2]);
+            // 色解析（中央付近）
+            const x = Math.floor(canvas.width * 0.35); // 反転考慮
+            const y = Math.floor(canvas.height * 0.55);
+            const p = ctx.getImageData(x, y, 1, 1).data;
+            
+            analyze(p[0], p[1], p[2]);
 
-            // 結果表示
-            document.getElementById('scanBtn').style.display = 'none';
+            // 画面切り替え
+            document.getElementById('scanScreen').style.display = 'none';
             document.getElementById('reportCard').style.display = 'block';
-            document.getElementById('reportCard').scrollIntoView({behavior: "smooth"});
+            window.scrollTo({top: 0, behavior: 'smooth'});
         });
 
-
-        // --- 簡易解析ロジック ---
+        // --- 詳細診断ロジック ---
         function analyze(r, g, b) {
-            // 肌の明るさ
             const brightness = (r + g + b) / 3;
-            // イエベブルベ（RとBの差）
-            const isWarm = (r - b) > 30; 
+            const warmScore = (r - b); // 赤と青の差
 
-            let title, base, season, advice, colors, itemHTML;
-
-            if (isWarm) {
-                base = "イエローベース";
-                if (brightness > 130) {
-                    season = "春 (SPRING)";
-                    title = "春の陽気のような透明感タイプ";
-                    advice = "明るく黄みのある肌色です。コーラルピンクやオレンジなど、ビタミンカラーが似合います。KOTONOVAの白フーディーで透明感を引き立てるのがおすすめ。";
-                    colors = ["#FF8FA3", "#FFD700", "#FF7F50"];
-                    itemHTML = `<div class="item-img" style="background:white; border:1px solid #ddd;"></div><div><div style="font-size:12px; font-weight:bold;">Soon, I will bloom フーディー</div><div style="font-size:10px;">あなたの明るい肌にはホワイトが映えます。</div></div>`;
+            let result = {};
+            
+            // 4シーズン判定
+            if (warmScore > 20) {
+                // イエベ
+                if (brightness > 120) {
+                    // 春
+                    result = {
+                        season: "SPRING (春)",
+                        base: "イエローベース / ライトトーン",
+                        total: "春の木漏れ日のような、多幸感あふれる「透明感」が武器のタイプです。暗い色で塗りつぶすよりも、本来の明るい肌質を活かしたツヤ肌メイクが、あなたの親しみやすさとオーラを最大化します。",
+                        make: "【肌】厚塗りはNG。ピーチ系の下地で血色を足し、素肌感を残して。<br>【目】コーラルオレンジやゴールドブラウン。大粒ラメより繊細なシマー質感が瞳を輝かせます。<br>【唇】マットより、ちゅるんとした質感のティントリップが正解。",
+                        colors: ["#FF8FA3", "#FFD700", "#FF7F50", "#98FB98"],
+                        reason1: "あなたの明るい肌色には、このピュアホワイトが「レフ板」の効果を果たし、顔色をワントーン明るく見せます。",
+                        reason2: "花柄のアートワークが、スプリングタイプ特有の可愛らしさとエネルギーに完璧にマッチします。"
+                    };
                 } else {
-                    season = "秋 (AUTUMN)";
-                    title = "シックで大人っぽいゴージャスタイプ";
-                    advice = "落ち着いた深みのある肌色です。テラコッタやカーキなど、アースカラーが魅力を引き出します。黒のアイテムで引き締めるとさらにクールです。";
-                    colors = ["#8B4513", "#DAA520", "#556B2F"];
-                    itemHTML = `<div class="item-img" style="background:black;"></div><div><div style="font-size:12px; font-weight:bold;">ロゴトラックパンツ</div><div style="font-size:10px;">シックなあなたにはブラックコーデが最適。</div></div>`;
+                    // 秋
+                    result = {
+                        season: "AUTUMN (秋)",
+                        base: "イエローベース / ディープトーン",
+                        total: "リッチで都会的、ゴージャスな雰囲気を持つ「ハンサム美人」タイプです。深みのあるアースカラーを身につけると、一気に洗練された大人の余裕が生まれます。",
+                        make: "【肌】陶器のようなセミマット肌が最強。ハイライトで立体感を。<br>【目】テラコッタ、カーキ、マスタード。陰影（シェーディング）を重視したスモーキーメイクが似合います。<br>【唇】ブリックレッド（レンガ色）やブラウン系で引き締めて。",
+                        colors: ["#8B4513", "#DAA520", "#556B2F", "#CD5C5C"],
+                        reason1: "シックなメイクが得意なあなただからこそ、あえて白のフーディーで「抜け感」を作ると、洗練されたK-POP空港ファッションになります。",
+                        reason2: "深みのあるメイクと対照的な白いキャンバスが、あなたの顔立ちの立体感をより際立たせます。"
+                    };
                 }
             } else {
-                base = "ブルーベース";
-                if (brightness > 130) {
-                    season = "夏 (SUMMER)";
-                    title = "涼しげで儚いエレガントタイプ";
-                    advice = "ピンク味のある明るい肌色です。ラベンダーやパステルブルーなど、涼しげな色が透明感を爆上げします。";
-                    colors = ["#D8BFD8", "#B0C4DE", "#DB7093"];
-                    itemHTML = `<div class="item-img" style="background:white; border:1px solid #ddd;"></div><div><div style="font-size:12px; font-weight:bold;">Soon, I will bloom フーディー</div><div style="font-size:10px;">儚げなデザインがあなたの雰囲気とマッチします。</div></div>`;
+                // ブルベ
+                if (brightness > 120) {
+                    // 夏
+                    result = {
+                        season: "SUMMER (夏)",
+                        base: "ブルーベース / ライトトーン",
+                        total: "雨上がりの紫陽花のような、儚げで上品な「エレガント」タイプです。強い色よりも、くすみのあるパステルカラー（ミューテッドカラー）が、あなたの透明感を爆発させます。",
+                        make: "【肌】ピンクオークル系で黄ぐすみをカバー。パウダリーで柔らかな肌質に。<br>【目】ローズピンク、ラベンダー、ココアブラウン。アイラインはグレー系で優しく締めて。<br>【唇】青みピンクやローズ系が肌の白さを引き立てます。",
+                        colors: ["#D8BFD8", "#B0C4DE", "#DB7093", "#E6E6FA"],
+                        reason1: "サマータイプの持つ「儚さ」と、このフーディーの繊細なアートワークは運命的な相性です。透明感がさらに増します。",
+                        reason2: "コントラストを抑えた配色が得意なあなたには、この優しい色合いのデザインが肌に溶け込むように馴染みます。"
+                    };
                 } else {
-                    season = "冬 (WINTER)";
-                    title = "コントラストの効いたクールタイプ";
-                    advice = "シャープな印象の肌色です。黒、白、赤など、はっきりした色が負けません。モノトーンコーデが最強に似合うタイプです。";
-                    colors = ["#000000", "#DC143C", "#FFFFFF"];
-                    itemHTML = `<div class="item-img" style="background:black;"></div><div><div style="font-size:12px; font-weight:bold;">ロゴトラックパンツ</div><div style="font-size:10px;">コントラストの強い配色があなたを主役にします。</div></div>`;
+                    // 冬
+                    result = {
+                        season: "WINTER (冬)",
+                        base: "ブルーベース / ディープトーン",
+                        total: "雪景色に咲く椿のような、シャープでモダンな「クールビューティー」タイプです。ぼんやりした色よりも、白・黒・赤といったコントラストの強い色が、あなたの強い瞳の力を引き出します。",
+                        make: "【肌】白さを際立たせるハイカバー。シェーディングよりハイライトで光を集めて。<br>【目】アイシーブルーやフューシャピンク。アイラインは黒ではっきり跳ね上げて。<br>【唇】真紅やワインレッドなど、主役級の濃い色が負けません。",
+                        colors: ["#000000", "#DC143C", "#4169E1", "#FFFFFF"],
+                        reason1: "ウィンタータイプは「真っ白」が最も似合うタイプです。このフーディーのクリアな白は、あなたの肌の白さを極限まで引き立てます。",
+                        reason2: "コントラストが得意なあなた。濃いリップメイクをしてこのフーディーを着るだけで、K-POPアイドルのような強いオーラが完成します。"
+                    };
                 }
             }
 
-            document.getElementById('resTitle').innerText = title;
-            document.getElementById('resBase').innerText = base;
-            document.getElementById('resSeason').innerText = season;
-            document.getElementById('resAdvice').innerText = advice;
-            document.getElementById('itemBox').innerHTML = itemHTML;
-
+            // HTMLへの反映
+            document.getElementById('resSeason').innerText = result.season;
+            document.getElementById('resBase').innerText = result.base;
+            document.getElementById('resTotal').innerText = result.total;
+            document.getElementById('resMake').innerHTML = result.make;
+            
+            // 色チップ生成
             const pBox = document.getElementById('paletteBox');
             pBox.innerHTML = "";
-            colors.forEach(c => {
-                let d = document.createElement('div');
-                d.className = 'color-chip';
+            result.colors.forEach(c => {
+                const d = document.createElement('div');
+                d.className = "color-chip";
                 d.style.backgroundColor = c;
                 pBox.appendChild(d);
             });
+
+            // 商品理由の反映
+            document.getElementById('reasonItem1').innerText = result.reason1;
+            document.getElementById('reasonItem2').innerText = result.reason2;
         }
     </script>
 </body>
 </html>
+
